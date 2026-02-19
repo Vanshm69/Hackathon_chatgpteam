@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum ItemType {
+  lost
+  found
+}
+
+enum ItemStatus {
+  open
+  claimed
+  resolved
+}
+
+enum ClaimStatus {
+  pending
+  approved
+  rejected
+  adminApproved
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  name      String?
+  role      Role     @default(user)
+  items     Item[]
+  claims    Claim[]
+  createdAt DateTime @default(now())
+}
+
+model Item {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  category    String
+  type        ItemType
+  description String?
+  location    String
+  date        DateTime
+  imageUrl    String?
+  status      ItemStatus  @default(open)
+  hiddenHint  String?
+  createdBy   String      @db.ObjectId
+  user        User        @relation(fields: [createdBy], references: [id])
+  claims      Claim[]
+  createdAt   DateTime    @default(now())
+
+  @@index([type])
+  @@index([category])
+  @@index([location])
+  @@index([status])
+}
+
+model Claim {
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  answer     String
+  status     ClaimStatus  @default(pending)
+  itemId     String       @db.ObjectId
+  item       Item         @relation(fields: [itemId], references: [id])
+  claimantId String       @db.ObjectId
+  claimant   User         @relation(fields: [claimantId], references: [id])
+  createdAt  DateTime     @default(now())
+
+  @@index([itemId])
+  @@index([claimantId])
+}
